@@ -1,10 +1,10 @@
+#include <AccessControl.hpp>
 #include <gmock/gmock.h>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <AccessControl.hpp>
 #include <Users.hpp>
 #include <UserStoreService.pb.h>
 #include <UserStoreService_client.usrv.pb.hpp>
@@ -356,9 +356,7 @@ UTEST(UserStoreUnitTests, HandleDatabaseException_SanitizationAndMapping) {
         conn_err, "AddUser", "name=Bob"
     );
     EXPECT_EQ(err3.GetStatus().error_code(), grpc::StatusCode::UNAVAILABLE);
-    EXPECT_EQ(
-        err3.GetStatus().error_message(), "Database service unavailable"
-    );
+    EXPECT_EQ(err3.GetStatus().error_message(), "Database service unavailable");
     EXPECT_EQ(
         err3.GetStatus().error_message().find("socket"), std::string::npos
     );
@@ -433,7 +431,9 @@ UTEST(AuthenticationTests, IsLoopbackPeer) {
     EXPECT_TRUE(Aquarium::Users::IsLoopbackPeer("::1:8080"));
 
     // IPv4-mapped IPv6 loopback
-    EXPECT_TRUE(Aquarium::Users::IsLoopbackPeer("ipv6:[::ffff:127.0.0.1]:8080"));
+    EXPECT_TRUE(
+        Aquarium::Users::IsLoopbackPeer("ipv6:[::ffff:127.0.0.1]:8080")
+    );
     EXPECT_TRUE(Aquarium::Users::IsLoopbackPeer("[::ffff:127.0.0.1]:8080"));
 
     // Unix domain sockets & inproc
@@ -457,9 +457,11 @@ UTEST(AuthenticationTests, ValidateStartupKeys) {
         "valid_invite_key_minimum_32_characters_long_123";
 
     // Valid production keys
-    EXPECT_NO_THROW(Aquarium::Users::ValidateStartupKeys(
-        valid_internal_key, valid_invite_key, false
-    ));
+    EXPECT_NO_THROW(
+        Aquarium::Users::ValidateStartupKeys(
+            valid_internal_key, valid_invite_key, false
+        )
+    );
 
     // Empty keys rejected in both modes
     EXPECT_THROW(
@@ -481,7 +483,9 @@ UTEST(AuthenticationTests, ValidateStartupKeys) {
 
     // Short keys rejected in production mode
     EXPECT_THROW(
-        Aquarium::Users::ValidateStartupKeys("short_key", valid_invite_key, false),
+        Aquarium::Users::ValidateStartupKeys(
+            "short_key", valid_invite_key, false
+        ),
         std::invalid_argument
     );
     EXPECT_THROW(
@@ -512,9 +516,11 @@ UTEST(AuthenticationTests, ValidateStartupKeys) {
     );
 
     // In test mode, shorter and development keys are allowed
-    EXPECT_NO_THROW(Aquarium::Users::ValidateStartupKeys(
-        "zxc", "secret_invite_key_value", true
-    ));
+    EXPECT_NO_THROW(
+        Aquarium::Users::ValidateStartupKeys(
+            "zxc", "secret_invite_key_value", true
+        )
+    );
 }
 
 UTEST(AuthenticationTests, ConstantTimeCompare) {
@@ -528,18 +534,28 @@ UTEST(AuthenticationTests, ConstantTimeCompare) {
     EXPECT_TRUE(Aquarium::Users::ConstantTimeCompare(key1, key2));
 
     // Same length, single character difference at beginning, middle, and end
-    EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("xecret123", "secret123"));
-    EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("secrxt123", "secret123"));
-    EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("secret124", "secret123"));
+    EXPECT_FALSE(
+        Aquarium::Users::ConstantTimeCompare("xecret123", "secret123")
+    );
+    EXPECT_FALSE(
+        Aquarium::Users::ConstantTimeCompare("secrxt123", "secret123")
+    );
+    EXPECT_FALSE(
+        Aquarium::Users::ConstantTimeCompare("secret124", "secret123")
+    );
 
     // Different lengths (prefix or suffix matching)
     EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("secret12", "secret123"));
-    EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("secret1234", "secret123"));
+    EXPECT_FALSE(
+        Aquarium::Users::ConstantTimeCompare("secret1234", "secret123")
+    );
     EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("", "secret123"));
     EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("secret123", ""));
 
     // Completely different strings
-    EXPECT_FALSE(Aquarium::Users::ConstantTimeCompare("abcdefghi", "123456789"));
+    EXPECT_FALSE(
+        Aquarium::Users::ConstantTimeCompare("abcdefghi", "123456789")
+    );
 }
 
 // ============================================================================
@@ -783,7 +799,8 @@ UTEST_F(UserServiceGrpcFixture, DeleteUser_Other_ByAdmin_Succeeds) {
 UTEST_F(UserServiceGrpcFixture, GetAll_OmitsDeactivatedUsers) {
     // Bob (id=3) is active initially
     aquarium::api::GetAllUsersRequest get_all_req;
-    auto initial_all = Client().GetAll(get_all_req, MakeAuthOptions("admin-token"));
+    auto initial_all =
+        Client().GetAll(get_all_req, MakeAuthOptions("admin-token"));
     bool found_bob_initially = false;
     for (const auto& u : initial_all.users()) {
         if (u.id() == 3) {
@@ -796,11 +813,13 @@ UTEST_F(UserServiceGrpcFixture, GetAll_OmitsDeactivatedUsers) {
     // Delete Bob
     aquarium::api::DeleteUserRequest del_req;
     del_req.set_id(3);
-    auto del_resp = Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
+    auto del_resp =
+        Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
     EXPECT_TRUE(del_resp.success());
 
     // GetAll should no longer include Bob
-    auto after_all = Client().GetAll(get_all_req, MakeAuthOptions("admin-token"));
+    auto after_all =
+        Client().GetAll(get_all_req, MakeAuthOptions("admin-token"));
     bool found_bob_after = false;
     for (const auto& u : after_all.users()) {
         if (u.id() == 3) {
@@ -815,7 +834,8 @@ UTEST_F(UserServiceGrpcFixture, GetUser_DeactivatedUser_ThrowsNotFound) {
     // Delete Bob (id=3)
     aquarium::api::DeleteUserRequest del_req;
     del_req.set_id(3);
-    auto del_resp = Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
+    auto del_resp =
+        Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
     EXPECT_TRUE(del_resp.success());
 
     // GetUser for Bob throws NotFound
@@ -830,10 +850,12 @@ UTEST_F(UserServiceGrpcFixture, GetUser_DeactivatedUser_ThrowsNotFound) {
 UTEST_F(UserServiceGrpcFixture, DeleteUser_AlreadyDeactivated_ReturnsFalse) {
     aquarium::api::DeleteUserRequest del_req;
     del_req.set_id(3);
-    auto first_resp = Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
+    auto first_resp =
+        Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
     EXPECT_TRUE(first_resp.success());
 
-    auto second_resp = Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
+    auto second_resp =
+        Client().DeleteUser(del_req, MakeAuthOptions("admin-token"));
     EXPECT_FALSE(second_resp.success());
 }
 
@@ -855,7 +877,10 @@ UTEST_F(UserServiceGrpcFixture, AddUser_WhitespaceName_ThrowsInvalidArgument) {
     );
 }
 
-UTEST_F(UserServiceGrpcFixture, AddUser_NameExceeds100Chars_ThrowsInvalidArgument) {
+UTEST_F(
+    UserServiceGrpcFixture,
+    AddUser_NameExceeds100Chars_ThrowsInvalidArgument
+) {
     aquarium::api::AddUserRequest req;
     req.set_name(std::string(101, 'a'));
     UEXPECT_THROW(
@@ -874,7 +899,10 @@ UTEST_F(UserServiceGrpcFixture, UpdateUser_EmptyName_ThrowsInvalidArgument) {
     );
 }
 
-UTEST_F(UserServiceGrpcFixture, UpdateUser_WhitespaceName_ThrowsInvalidArgument) {
+UTEST_F(
+    UserServiceGrpcFixture,
+    UpdateUser_WhitespaceName_ThrowsInvalidArgument
+) {
     aquarium::api::UpdateUserRequest req;
     req.set_id(2);
     req.set_newname("   \n\t  ");
@@ -884,7 +912,10 @@ UTEST_F(UserServiceGrpcFixture, UpdateUser_WhitespaceName_ThrowsInvalidArgument)
     );
 }
 
-UTEST_F(UserServiceGrpcFixture, UpdateUser_NameExceeds100Chars_ThrowsInvalidArgument) {
+UTEST_F(
+    UserServiceGrpcFixture,
+    UpdateUser_NameExceeds100Chars_ThrowsInvalidArgument
+) {
     aquarium::api::UpdateUserRequest req;
     req.set_id(2);
     req.set_newname(std::string(101, 'b'));

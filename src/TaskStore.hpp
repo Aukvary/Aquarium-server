@@ -149,6 +149,10 @@ void ValidateCreateTaskRequest(const aquarium::api::CreateTaskRequest& request);
 void ValidateTaskId(std::int64_t id);
 void ValidateWorkerId(std::int64_t workerId);
 void ValidateTaskStatus(aquarium::api::TaskStatus status);
+aquarium::api::TaskStatus ResolveTaskStatus(
+    aquarium::api::TaskStatus requestedStatus,
+    std::int64_t checkerId
+);
 void ValidateAddCommentRequest(const aquarium::api::AddCommentRequest& request);
 void ValidateRejectTaskRequest(const aquarium::api::RejectTaskRequest& request);
 

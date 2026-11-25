@@ -195,6 +195,26 @@ void ValidateTaskStatus(aquarium::api::TaskStatus status) {
     }
 }
 
+aquarium::api::TaskStatus ResolveTaskStatus(
+    aquarium::api::TaskStatus requestedStatus,
+    std::int64_t checkerId
+) {
+    if (checkerId == 0 &&
+        requestedStatus == aquarium::api::TaskStatus::IN_REVIEW) {
+        throw userver::ugrpc::server::ErrorWithStatus(
+            grpc::Status(
+                grpc::StatusCode::INVALID_ARGUMENT,
+                "Task without a checker cannot be put in IN_REVIEW status"
+            )
+        );
+    }
+    if (requestedStatus == aquarium::api::TaskStatus::COMPLETE) {
+        return checkerId == 0 ? aquarium::api::TaskStatus::VERIFIED
+                              : aquarium::api::TaskStatus::IN_REVIEW;
+    }
+    return requestedStatus;
+}
+
 void ValidateAddCommentRequest(
     const aquarium::api::AddCommentRequest& request
 ) {
@@ -453,21 +473,8 @@ TaskStoreService::CreateTaskResult TaskStoreService::CreateTask(
             }
         }
 
-        auto taskStatus = request.status();
-        if (!checkerId.has_value() || *checkerId == 0) {
-            if (taskStatus == aquarium::api::TaskStatus::IN_REVIEW) {
-                throw userver::ugrpc::server::ErrorWithStatus(
-                    grpc::Status(
-                        grpc::StatusCode::INVALID_ARGUMENT,
-                        "Task without a checker cannot be created in IN_REVIEW "
-                        "status"
-                    )
-                );
-            }
-            if (taskStatus == aquarium::api::TaskStatus::COMPLETE) {
-                taskStatus = aquarium::api::TaskStatus::VERIFIED;
-            }
-        }
+        const auto taskStatus =
+            ResolveTaskStatus(request.status(), checkerId.value_or(0));
         const auto statusRaw = static_cast<std::int16_t>(taskStatus);
 
         std::optional<userver::storages::postgres::TimePointTz> dueDate;
@@ -817,23 +824,11 @@ TaskStoreService::UpdateTaskStatusResult TaskStoreService::UpdateTaskStatus(
             userver::storages::postgres::kRowTag
         );
 
-        auto targetStatus = request.status();
-        if (taskInfo.CheckerId == 0) {
-            if (targetStatus == aquarium::api::TaskStatus::IN_REVIEW) {
-                throw userver::ugrpc::server::ErrorWithStatus(
-                    grpc::Status(
-                        grpc::StatusCode::INVALID_ARGUMENT,
-                        "Task without a checker cannot be put in IN_REVIEW "
-                        "status"
-                    )
-                );
-            }
-            if (targetStatus == aquarium::api::TaskStatus::COMPLETE) {
-                targetStatus = aquarium::api::TaskStatus::VERIFIED;
-            }
-        }
+        const auto requestedStatus = request.status();
+        const auto targetStatus =
+            ResolveTaskStatus(requestedStatus, taskInfo.CheckerId);
 
-        if (!CheckTaskStatusUpdatePermission(user, taskInfo, targetStatus)) {
+        if (!CheckTaskStatusUpdatePermission(user, taskInfo, requestedStatus)) {
             throw userver::ugrpc::server::ErrorWithStatus(
                 grpc::Status(
                     grpc::StatusCode::PERMISSION_DENIED,
