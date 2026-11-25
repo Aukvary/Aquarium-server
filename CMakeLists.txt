@@ -5,57 +5,55 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(USERVER_USE_STATIC_LIBS
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_PATCH_LIBPQ
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FORCE_DOWNLOAD_PROTOBUF
-    ON
-    CACHE BOOL "" FORCE)
-set(USERVER_FORCE_DOWNLOAD_GRPC
-    ON
-    CACHE BOOL "" FORCE)
-
-set(USERVER_FEATURE_GRPC
-    ON
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_POSTGRESQL
-    ON
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_MONGODB
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_CLICKHOUSE
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_RABBITMQ
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_KAFKA
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_MYSQL
-    OFF
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_GRPC_REFLECTION
-    ON
-    CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_STACKTRACE
-    OFF
-    CACHE BOOL "" FORCE)
-
 find_package(
   userver
   COMPONENTS core
              grpc
              postgresql
-             utest
-             grpc-utest
   QUIET)
 
 if(NOT userver_FOUND)
+  set(USERVER_USE_STATIC_LIBS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_PATCH_LIBPQ
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FORCE_DOWNLOAD_PROTOBUF
+      ON
+      CACHE BOOL "" FORCE)
+  set(USERVER_FORCE_DOWNLOAD_GRPC
+      ON
+      CACHE BOOL "" FORCE)
+
+  set(USERVER_FEATURE_GRPC
+      ON
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_POSTGRESQL
+      ON
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_MONGODB
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_CLICKHOUSE
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_RABBITMQ
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_KAFKA
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_MYSQL
+      OFF
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_GRPC_REFLECTION
+      ON
+      CACHE BOOL "" FORCE)
+  set(USERVER_FEATURE_STACKTRACE
+      OFF
+      CACHE BOOL "" FORCE)
+
   include(FetchContent)
   FetchContent_Declare(
     userver
@@ -89,23 +87,27 @@ target_link_libraries(
                           userver::core userver::grpc userver::postgresql)
 
 # Unit & Coroutine Tests
-enable_testing()
+option(BUILD_TESTING "Build unit and coroutine tests" ON)
 
-add_executable(
-  ${PROJECT_NAME}-unittest
-  tests/unittest/test_user_service.cpp
-  tests/unittest/test_task_service.cpp
-)
+if(BUILD_TESTING)
+  enable_testing()
 
-target_include_directories(${PROJECT_NAME}-unittest PRIVATE src)
-target_link_libraries(
-  ${PROJECT_NAME}-unittest PRIVATE
-  ${PROJECT_NAME}_objs
-  ${PROJECT_NAME}-proto
-  userver::utest
-  userver::grpc-utest
-  userver::postgresql
-)
+  add_executable(
+    ${PROJECT_NAME}-unittest
+    tests/unittest/test_user_service.cpp
+    tests/unittest/test_task_service.cpp
+  )
 
-add_google_tests(${PROJECT_NAME}-unittest)
-set_tests_properties(${PROJECT_NAME}-unittest PROPERTIES ENVIRONMENT "USERVER_ENABLE_STACK_USAGE_MONITOR=0")
+  target_include_directories(${PROJECT_NAME}-unittest PRIVATE src)
+  target_link_libraries(
+    ${PROJECT_NAME}-unittest PRIVATE
+    ${PROJECT_NAME}_objs
+    ${PROJECT_NAME}-proto
+    userver::utest
+    userver::grpc-utest
+    userver::postgresql
+  )
+
+  add_google_tests(${PROJECT_NAME}-unittest)
+  set_tests_properties(${PROJECT_NAME}-unittest PROPERTIES ENVIRONMENT "USERVER_ENABLE_STACK_USAGE_MONITOR=0")
+endif()

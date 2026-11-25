@@ -10,13 +10,17 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-aquarium}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5421}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql:/sql:ro
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-aquarium}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-aquarium}",
+        ]
       interval: 3s
       timeout: 5s
       retries: 5
@@ -34,8 +38,8 @@ services:
     environment:
       USERVER_ENABLE_STACK_USAGE_MONITOR: "0"
       PG_CONNECTION: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-aquarium}"
-      INTERNAL_KEY: "${INTERNAL_KEY:-zxc}"
-      INVITE_KEY: "${INVITE_KEY:-secret_invite_key_value}"
+      INTERNAL_KEY: "${INTERNAL_KEY:-aquarium_internal_secret_key_minimum_32_chars}"
+      INVITE_KEY: "${INVITE_KEY:-aquarium_invite_secret_key_minimum_32_chars}"
       USER_STORE_CLIENT_ENDPOINT: "127.0.0.1:8081"
     ports:
       - "${GRPC_PORT:-8081}:8081"

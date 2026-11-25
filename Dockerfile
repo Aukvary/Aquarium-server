@@ -14,7 +14,7 @@ COPY sql/ ./sql/
 COPY tests/ ./tests/
 
 # Build the service binary in Release mode
-RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     && cmake --build build --target aquarium -j$(nproc)
 
 # Expose HTTP (monitoring/testsuite) and gRPC ports

@@ -1,34 +1,24 @@
 #include "../AccessControl.hpp"
 
 #include <algorithm>
-#include <ranges>
 
 namespace Aquarium::AccessControl {
 
-bool CanUpdateUser(
-    const Users::UserDbInfo* user,
-    std::int64_t targetUserId
-) {
+bool CanUpdateUser(const Users::UserDbInfo* user, std::int64_t targetUserId) {
     if (!user) {
         return false;
     }
     return user->admin || user->id == targetUserId;
 }
 
-bool CanDeleteUser(
-    const Users::UserDbInfo* user,
-    std::int64_t targetUserId
-) {
+bool CanDeleteUser(const Users::UserDbInfo* user, std::int64_t targetUserId) {
     if (!user) {
         return false;
     }
     return user->admin || user->id == targetUserId;
 }
 
-bool CanCreateTask(
-    const Users::UserDbInfo* user,
-    std::int64_t authorId
-) {
+bool CanCreateTask(const Users::UserDbInfo* user, std::int64_t authorId) {
     if (!user) {
         return false;
     }
@@ -108,10 +98,7 @@ bool CanModifyTaskWorkers(
     return (taskInfo.CheckerId != 0 && user->id == taskInfo.CheckerId);
 }
 
-bool CanDeleteTask(
-    const Users::UserDbInfo* user,
-    std::int64_t authorId
-) {
+bool CanDeleteTask(const Users::UserDbInfo* user, std::int64_t authorId) {
     if (!user) {
         return false;
     }
@@ -147,7 +134,8 @@ bool CanAddComment(
     if (taskInfo.CheckerId != 0 && user->id == taskInfo.CheckerId) {
         return true;
     }
-    return std::ranges::find(taskInfo.WorkerIds, user->id) != taskInfo.WorkerIds.end();
+    return std::ranges::find(taskInfo.WorkerIds, user->id) !=
+           taskInfo.WorkerIds.end();
 }
 
 bool CanViewComments(

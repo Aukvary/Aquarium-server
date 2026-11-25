@@ -57,10 +57,7 @@ const UserDbInfo* FindUserById(
 
 bool IsLoopbackPeer(std::string_view peer) noexcept;
 
-bool ConstantTimeCompare(
-    std::string_view str1,
-    std::string_view str2
-) noexcept;
+bool ConstantTimeCompare(std::string_view str1, std::string_view str2) noexcept;
 
 void ValidateStartupKeys(
     std::string_view internalKey,
@@ -188,8 +185,7 @@ public:
         PeerValidator peerValidator = IsLoopbackPeer
     )
         : _inviteKey(inviteKey), _authCache(&authCache),
-          _internalKey(internalKey),
-          _peerValidator(std::move(peerValidator)) {}
+          _internalKey(internalKey), _peerValidator(std::move(peerValidator)) {}
 
     explicit AuthenticationMiddleware(
         const std::string_view inviteKey,
@@ -197,8 +193,8 @@ public:
         const std::string_view internalKey,
         PeerValidator peerValidator = IsLoopbackPeer
     )
-        : _inviteKey(inviteKey), _authCache(nullptr),
-          _internalKey(internalKey), _userLookup(std::move(userLookup)),
+        : _inviteKey(inviteKey), _authCache(nullptr), _internalKey(internalKey),
+          _userLookup(std::move(userLookup)),
           _peerValidator(std::move(peerValidator)) {}
 
     void OnCallStart(
@@ -265,9 +261,7 @@ properties:
         ValidateStartupKeys(internalKey, inviteKey, isTestMode);
 
         _middleware = std::make_shared<const AuthenticationMiddleware>(
-            inviteKey,
-            ctx.FindComponent<AuthCache>(),
-            internalKey
+            inviteKey, ctx.FindComponent<AuthCache>(), internalKey
         );
     }
 

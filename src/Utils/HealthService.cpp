@@ -4,7 +4,6 @@
 #include "userver/ugrpc/client/exceptions.hpp"
 #include "userver/ugrpc/server/service_component_base.hpp"
 
-#include <memory>
 #include <string>
 #include <UserStoreService.grpc.pb.h>
 #include <UserStoreService.pb.h>

@@ -1,5 +1,5 @@
+#include "./AccessControl.hpp"
 #include "./Users.hpp"
-#include "../AccessControl.hpp"
 #include "userver/cache/update_type.hpp"
 #include "userver/storages/postgres/cluster_types.hpp"
 
@@ -10,9 +10,11 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/support/config.h>
 #include <grpcpp/support/status.h>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <UserStoreService.pb.h>
 #include <userver/logging/log.hpp>
 #include <userver/storages/postgres/cluster.hpp>
@@ -26,7 +28,7 @@
 
 namespace Aquarium::Users {
 bool IsBlank(std::string_view str) noexcept {
-    return std::all_of(str.begin(), str.end(), [](unsigned char c) {
+    return std::ranges::all_of(str, [](unsigned char c) {
         return std::isspace(c);
     });
 }
@@ -35,8 +37,7 @@ void ValidateUserName(std::string_view name) {
     if (IsBlank(name)) {
         throw userver::ugrpc::server::ErrorWithStatus(
             grpc::Status(
-                grpc::StatusCode::INVALID_ARGUMENT,
-                "User name cannot be empty"
+                grpc::StatusCode::INVALID_ARGUMENT, "User name cannot be empty"
             )
         );
     }
@@ -58,11 +59,9 @@ const UserDbInfo* FindUserById(
         userver::crypto::algorithm::StringsEqualConstTimeComparator>& users,
     std::int64_t id
 ) {
-    auto it = std::find_if(
-        users.begin(), users.end(), [id](const auto& pair) {
-            return pair.second.id == id;
-        }
-    );
+    auto it = std::ranges::find_if(users, [id](const auto& pair) {
+        return pair.second.id == id;
+    });
     if (it == users.end()) {
         return nullptr;
     }
@@ -87,8 +86,7 @@ userver::ugrpc::server::ErrorWithStatus HandleDatabaseException(
                       << contextInfo << "): " << e->what();
         return userver::ugrpc::server::ErrorWithStatus(
             grpc::Status(
-                grpc::StatusCode::ALREADY_EXISTS,
-                "Resource already exists"
+                grpc::StatusCode::ALREADY_EXISTS, "Resource already exists"
             )
         );
     }
@@ -113,8 +111,7 @@ userver::ugrpc::server::ErrorWithStatus HandleDatabaseException(
                     << contextInfo << "): " << e->what();
         return userver::ugrpc::server::ErrorWithStatus(
             grpc::Status(
-                grpc::StatusCode::UNAVAILABLE,
-                "Database service unavailable"
+                grpc::StatusCode::UNAVAILABLE, "Database service unavailable"
             )
         );
     }
@@ -300,7 +297,8 @@ UserStoreService::DeleteUserResult UserStoreService::DeleteUser(
     }
 
     static const userver::storages::postgres::Query kQuery{
-        "UPDATE user_schema.tokens SET active = FALSE, updated = CURRENT_TIMESTAMP "
+        "UPDATE user_schema.tokens SET active = FALSE, updated = "
+        "CURRENT_TIMESTAMP "
         "WHERE id = $1 AND active = TRUE"
     };
 
@@ -312,7 +310,9 @@ UserStoreService::DeleteUserResult UserStoreService::DeleteUser(
 
         bool success = result.RowsAffected() > 0;
         if (success) {
-            _authCache.InvalidateAsync(userver::cache::UpdateType::kIncremental);
+            _authCache.InvalidateAsync(
+                userver::cache::UpdateType::kIncremental
+            );
         }
 
         aquarium::api::DeleteUserResponse response;
